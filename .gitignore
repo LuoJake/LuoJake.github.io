@@ -1,0 +1,7 @@
+.DS_Store
+Thumbs.db
+.tools/
+node_modules/
+.chrome-*/
+.edge-*/
+homepage-*.png

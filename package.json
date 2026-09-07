@@ -1,0 +1,11 @@
+{
+  "name": "jakes-garden",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:ui": "node tests/ui-check.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
