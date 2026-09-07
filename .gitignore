@@ -2,6 +2,7 @@
 Thumbs.db
 .tools/
 node_modules/
+dist/
 .chrome-*/
 .edge-*/
 homepage-*.png

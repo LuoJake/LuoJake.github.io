@@ -1,0 +1,126 @@
+media:
+  input: assets/uploads
+  output: /assets/uploads
+
+content:
+  - name: posts
+    label: 文章与书摘
+    type: collection
+    path: content/posts
+    format: yaml-frontmatter
+    view:
+      fields: [title, type, date, tags]
+      primary: title
+      sort: [date, title]
+      search: [title, author, summary, body]
+      default:
+        sort: date
+        order: desc
+    fields:
+      - name: title
+        label: 标题
+        type: string
+        required: true
+      - name: type
+        label: 类型
+        type: select
+        required: true
+        default: note
+        options:
+          values:
+            - label: 随笔
+              value: note
+            - label: 书摘
+              value: quote
+            - label: 长文
+              value: article
+      - name: author
+        label: 作者
+        type: string
+        default: Jake
+        required: true
+      - name: date
+        label: 日期
+        type: date
+        required: true
+      - name: tags
+        label: 标签
+        type: select
+        required: true
+        options:
+          multiple: true
+          min: 1
+          values:
+            - 个人思考
+            - 投资理财
+            - 阅读摘录
+            - 价值投资
+            - 企业研究
+            - 长期主义
+            - 决策方法
+            - 风险管理
+            - 情绪与纪律
+            - 财务自由
+            - 个人成长
+            - 读书笔记
+            - 巴菲特
+            - 芒格
+            - 长文
+      - name: summary
+        label: 摘要
+        type: text
+        required: true
+      - name: featured
+        label: 首页重点展示
+        type: boolean
+        default: false
+      - name: source
+        label: 出处说明
+        type: string
+      - name: sourceUrl
+        label: 出处链接
+        type: string
+      - name: body
+        label: 正文
+        type: rich-text
+        required: true
+
+  - name: daily-quotes
+    label: 每日自省
+    type: file
+    path: content/daily-quotes.yml
+    fields:
+      - name: quotes
+        label: 语录
+        type: object
+        list:
+          min: 1
+          collapsible:
+            collapsed: true
+            summary: "{text}"
+        fields:
+          - name: text
+            label: 内容
+            type: text
+            required: true
+          - name: author
+            label: 来源
+            type: string
+            default: 每日自省
+          - name: theme
+            label: 主题
+            type: select
+            required: true
+            options:
+              values: [个人成长, 财务自由, 投资纪律, 长期主义, 逆向思考]
+
+settings:
+  content:
+    merge: true
+  commit:
+    identity: user
+    templates:
+      create: "content: 创建 {path}"
+      update: "content: 更新 {path}"
+      delete: "content: 删除 {path}"
+

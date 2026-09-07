@@ -1,12 +1,15 @@
 # Jake 的文字花园
 
-一个部署在 GitHub Pages 上的个人文字库，包含阅读、搜索、可点击标签归档、文章详情、可视化写作台、标签推荐和旧文字批量识别。
+一个部署在 GitHub Pages 上的个人文字库，包含阅读、搜索、可点击标签归档、文章详情、每日自省、跨设备内容管理、本地可视化写作台、标签推荐和旧文字批量识别。
 
 ## 本地预览
 
-在项目目录运行：
+首次使用先安装依赖并构建：
 
 ```powershell
+npm.cmd install
+npm.cmd run build
+cd dist
 python -m http.server 4173
 ```
 
@@ -14,7 +17,8 @@ python -m http.server 4173
 
 ## 内容管理
 
-- 示例公开内容位于 `js/content.js`。
+- 公开文章位于 `content/posts/*.md`，每篇文章都是一个可迁移的 Markdown 文件。
+- 每日自省位于 `content/daily-quotes.yml`，首页每天自动选择一条，也支持手动翻页。
 - 写作台草稿保存在当前浏览器的 `localStorage` 中，不会自动公开。
 - 写作台只在 `localhost` 或 `127.0.0.1` 本地地址开放，公网不显示入口，直接访问也不会加载编辑器。
 - 网站发布权限由 GitHub 仓库控制，目前只有仓库所有者和已授权密钥可以修改线上内容。
@@ -22,9 +26,17 @@ python -m http.server 4173
 - 写作台可以导出带元信息的 Markdown 文件，后续可由导入脚本转换为公开内容。
 - 大量旧文字可以在写作台中按空行、日期或每行一条进行初步拆分，再存为待整理草稿。
 
+## 手机与跨设备管理
+
+访问 `https://app.pagescms.org`，使用拥有仓库写权限的 GitHub 账号登录并选择 `LuoJake/LuoJake.github.io`。Pages CMS 根据 `.pages.yml` 提供文章、标签、富文本正文和每日自省编辑界面。每次保存都会写入 GitHub 提交并触发自动发布。
+
+其他人可以看到公开网站，但没有仓库写权限就不能修改内容。Pages CMS 只负责编辑 GitHub 中的 Markdown；即使未来停用，文章和历史版本仍留在仓库。
+
+手机产生远程提交后，在本地项目目录运行 `git pull` 即可同步到电脑。
+
 ## 发布
 
-仓库连接 GitHub 后，可在仓库 Settings > Pages 中选择 `main` 分支根目录进行发布。
+`.github/workflows/deploy-pages.yml` 会在 `main` 分支变化后运行构建，并将 `dist/` 自动发布到 GitHub Pages。
 
 ## 内容来源说明
 

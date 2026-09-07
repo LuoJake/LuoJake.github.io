@@ -1,10 +1,14 @@
 (function () {
   const app = document.getElementById("app");
   const posts = window.GARDEN_POSTS || [];
+  const dailyQuotes = window.DAILY_QUOTES || [];
   let editor = null;
   let activeFilter = "all";
   let archiveTag = "all";
   const authoringAllowed = ["localhost", "127.0.0.1"].includes(location.hostname);
+  const today = new Date();
+  const localDayNumber = Math.floor(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 86400000);
+  let dailyQuoteIndex = dailyQuotes.length ? localDayNumber % dailyQuotes.length : 0;
 
   const typeLabels = { quote: "书摘", note: "随笔", article: "长文" };
   const typeIcons = { quote: "quote", note: "feather", article: "file-text" };
@@ -52,11 +56,10 @@
 
   function renderHome() {
     setActiveNav("home");
-    const daily = posts.find(p => p.id === "price-and-value") || posts[0];
     app.innerHTML = `<section class="intro-band">
       <div class="page-shell intro-inner">
         <div><p class="eyebrow">JAKE'S NOTES & ESSAYS</p><h1>收藏值得反复阅读的句子，安放<em>持续生长</em>的思考。</h1><p class="intro-copy">这里不追赶信息，只整理那些经得起时间的判断。</p></div>
-        <aside class="today-note"><span>今日重读</span><blockquote>“价格是你付出的，价值是你得到的。”</blockquote><cite>沃伦·巴菲特</cite></aside>
+        <aside class="today-note"><div class="daily-head"><span id="dailyTheme">每日自省</span><div class="daily-controls"><button id="previousQuote" aria-label="上一条" title="上一条"><i data-lucide="chevron-left"></i></button><span id="dailyCount"></span><button id="nextQuote" aria-label="下一条" title="下一条"><i data-lucide="chevron-right"></i></button></div></div><blockquote id="dailyText"></blockquote><cite id="dailyAuthor"></cite></aside>
       </div>
     </section>
     <section class="control-band"><div class="page-shell controls">
@@ -67,6 +70,20 @@
     const grid = document.getElementById("contentGrid");
     const search = document.getElementById("searchInput");
     const clear = document.getElementById("searchClear");
+    function updateDailyQuote() {
+      const quote = dailyQuotes[dailyQuoteIndex];
+      if (!quote) return;
+      document.getElementById("dailyTheme").textContent = quote.theme || "每日自省";
+      document.getElementById("dailyText").textContent = `“${quote.text}”`;
+      document.getElementById("dailyAuthor").textContent = quote.author || "每日自省";
+      document.getElementById("dailyCount").textContent = `${dailyQuoteIndex + 1} / ${dailyQuotes.length}`;
+    }
+    function turnDailyQuote(direction) {
+      dailyQuoteIndex = (dailyQuoteIndex + direction + dailyQuotes.length) % dailyQuotes.length;
+      updateDailyQuote();
+    }
+    document.getElementById("previousQuote").addEventListener("click", () => turnDailyQuote(-1));
+    document.getElementById("nextQuote").addEventListener("click", () => turnDailyQuote(1));
     function update() {
       const q = search.value.trim().toLowerCase();
       const visible = posts.filter(p => (activeFilter === "all" || p.type === activeFilter) && (!q || [p.title, p.author, p.summary, p.body, ...p.tags].join(" ").toLowerCase().includes(q)));
@@ -82,6 +99,7 @@
       document.querySelectorAll("[data-filter]").forEach(x => x.classList.toggle("active", x === btn));
       update();
     }));
+    updateDailyQuote();
     update();
   }
 

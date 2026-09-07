@@ -17,6 +17,10 @@ async function check(condition, message) {
 
     await page.goto(`${baseUrl}/#/`, { waitUntil: "networkidle" });
     await check(await page.locator(".entry-card").count() === 8, `${viewport.name}: 首页内容数量异常`);
+    await check(await page.locator("#dailyText").innerText() !== "", `${viewport.name}: 每日自省未显示`);
+    const firstDailyQuote = await page.locator("#dailyText").innerText();
+    await page.locator("#nextQuote").click();
+    await check(await page.locator("#dailyText").innerText() !== firstDailyQuote, `${viewport.name}: 每日自省无法翻页`);
     const studioEnabled = await page.locator('[data-nav="studio"]').evaluate(node => !node.hidden);
     await check(studioEnabled === localAuthoring, `${viewport.name}: 写作台入口权限状态异常`);
     const dimensions = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));

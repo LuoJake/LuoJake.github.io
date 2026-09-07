@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "node scripts/build.mjs",
     "test:ui": "node tests/ui-check.js"
   },
   "devDependencies": {
-    "playwright": "1.63.0"
+    "playwright": "1.63.0",
+    "yaml": "2.9.0"
   }
 }
