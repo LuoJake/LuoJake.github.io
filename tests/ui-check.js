@@ -31,6 +31,7 @@ async function check(condition, message) {
     await check(dimensions.scroll <= dimensions.client, `${viewport.name}: 页面存在横向溢出 ${JSON.stringify(dimensions)}`);
 
     await page.locator(".entry-card .tag").first().click();
+    await page.locator(".tag-list a.active").waitFor();
     await check(await page.locator(".tag-list a.active").count() === 1, `${viewport.name}: 标签专题没有激活`);
     await check(await page.locator(".timeline-item").count() > 0, `${viewport.name}: 标签专题没有匹配内容`);
 
