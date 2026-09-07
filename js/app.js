@@ -4,6 +4,7 @@
   let editor = null;
   let activeFilter = "all";
   let archiveTag = "all";
+  const authoringAllowed = ["localhost", "127.0.0.1"].includes(location.hostname);
 
   const typeLabels = { quote: "书摘", note: "随笔", article: "长文" };
   const typeIcons = { quote: "quote", note: "feather", article: "file-text" };
@@ -19,6 +20,10 @@
 
   function formatDate(date) {
     return new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long", day: "numeric" }).format(new Date(`${date}T00:00:00`));
+  }
+
+  function tagUrl(tag) {
+    return `#/archive/tag/${encodeURIComponent(tag)}`;
   }
 
   function toast(message) {
@@ -39,12 +44,10 @@
   }
 
   function card(post) {
-    return `<a class="entry-card ${post.featured ? "featured" : ""}" href="#/post/${post.id}">
-      <span class="entry-type"><i data-lucide="${typeIcons[post.type]}"></i>${typeLabels[post.type]}</span>
-      <h3>${escapeHtml(post.title)}</h3>
-      <p class="summary">${escapeHtml(post.summary)}</p>
-      <div class="entry-meta"><span>${escapeHtml(post.author)}</span><span>·</span><time>${formatDate(post.date)}</time>${post.tags.slice(0, 2).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
-    </a>`;
+    return `<article class="entry-card ${post.featured ? "featured" : ""}">
+      <a class="entry-main" href="#/post/${post.id}"><span class="entry-type"><i data-lucide="${typeIcons[post.type]}"></i>${typeLabels[post.type]}</span><h3>${escapeHtml(post.title)}</h3><p class="summary">${escapeHtml(post.summary)}</p></a>
+      <div class="entry-meta"><span>${escapeHtml(post.author)}</span><span>·</span><time>${formatDate(post.date)}</time>${post.tags.slice(0, 2).map(tag => `<a class="tag" href="${tagUrl(tag)}">${escapeHtml(tag)}</a>`).join("")}</div>
+    </article>`;
   }
 
   function renderHome() {
@@ -88,7 +91,7 @@
     setActiveNav("");
     app.innerHTML = `<article class="article-shell">
       <a class="back-link" href="#/"><i data-lucide="arrow-left"></i>返回阅读</a>
-      <header class="article-head"><span class="entry-type"><i data-lucide="${typeIcons[post.type]}"></i>${typeLabels[post.type]}</span><h1>${escapeHtml(post.title)}</h1><div class="article-info"><span>${escapeHtml(post.author)}</span><time>${formatDate(post.date)}</time>${post.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div></header>
+      <header class="article-head"><span class="entry-type"><i data-lucide="${typeIcons[post.type]}"></i>${typeLabels[post.type]}</span><h1>${escapeHtml(post.title)}</h1><div class="article-info"><span>${escapeHtml(post.author)}</span><time>${formatDate(post.date)}</time>${post.tags.map(t => `<a class="tag" href="${tagUrl(t)}">${escapeHtml(t)}</a>`).join("")}</div></header>
       <div class="article-body">${renderMarkdown(post.body)}</div>
       <div class="source-box"><strong>出处说明：</strong> ${escapeHtml(post.source)} ${post.sourceUrl ? `<a href="${escapeHtml(post.sourceUrl)}" target="_blank" rel="noopener">查看原始来源</a>` : ""}</div>
     </article>`;
@@ -96,13 +99,50 @@
     refreshIcons();
   }
 
-  function renderArchive() {
+  function renderArchive(selectedTag = archiveTag) {
     setActiveNav("archive");
+    archiveTag = selectedTag;
     const allTags = [...new Set(posts.flatMap(p => p.tags))];
     const visible = archiveTag === "all" ? posts : posts.filter(p => p.tags.includes(archiveTag));
     const groups = visible.reduce((acc, post) => { const y = post.date.slice(0, 4); (acc[y] ||= []).push(post); return acc; }, {});
-    app.innerHTML = `<div class="page-shell archive-layout"><aside class="archive-sidebar"><h1>归档</h1><p>${posts.length} 篇文字，${allTags.length} 个标签</p><div class="tag-list"><button data-tag="all" class="${archiveTag === "all" ? "active" : ""}">全部</button>${allTags.map(t => `<button data-tag="${escapeHtml(t)}" class="${archiveTag === t ? "active" : ""}">${escapeHtml(t)}</button>`).join("")}</div></aside><section>${Object.keys(groups).sort().reverse().map(year => `<div class="timeline-group"><h2 class="timeline-year">${year}</h2>${groups[year].map(p => `<a class="timeline-item" href="#/post/${p.id}"><time>${p.date.slice(5).replace("-", "/")}</time><strong>${escapeHtml(p.title)}</strong><span>${typeLabels[p.type]}</span></a>`).join("")}</div>`).join("") || `<div class="empty-state">这个标签下还没有内容。</div>`}</section></div>`;
-    document.querySelectorAll("[data-tag]").forEach(btn => btn.addEventListener("click", () => { archiveTag = btn.dataset.tag; renderArchive(); }));
+    app.innerHTML = `<div class="page-shell archive-layout"><aside class="archive-sidebar"><h1>${archiveTag === "all" ? "归档" : escapeHtml(archiveTag)}</h1><p>${visible.length} 篇文字，${allTags.length} 个标签</p><div class="tag-list"><a href="#/archive" class="${archiveTag === "all" ? "active" : ""}">全部</a>${allTags.map(t => `<a href="${tagUrl(t)}" class="${archiveTag === t ? "active" : ""}">${escapeHtml(t)}<small>${posts.filter(p => p.tags.includes(t)).length}</small></a>`).join("")}</div></aside><section>${Object.keys(groups).sort().reverse().map(year => `<div class="timeline-group"><h2 class="timeline-year">${year}</h2>${groups[year].map(p => `<a class="timeline-item" href="#/post/${p.id}"><time>${p.date.slice(5).replace("-", "/")}</time><strong>${escapeHtml(p.title)}</strong><span>${typeLabels[p.type]}</span></a>`).join("")}</div>`).join("") || `<div class="empty-state">这个标签下还没有内容。</div>`}</section></div>`;
+    refreshIcons();
+  }
+
+  function parseTags(value) {
+    return [...new Set(value.split(/[,，]/).map(x => x.trim()).filter(Boolean))];
+  }
+
+  function recommendTags(title, body, type) {
+    const text = `${title}\n${body}`.toLowerCase();
+    const rules = {
+      "投资理财": ["投资", "股票", "市场", "企业", "公司", "价格", "价值", "资本", "估值", "现金流", "巴菲特", "芒格", "复利", "持有"],
+      "个人思考": ["我", "自己", "思考", "感受", "认为", "生活", "经历", "成长", "提醒", "理解"],
+      "阅读摘录": ["摘录", "引用", "原文", "作者", "书中", "读到", "这句话"],
+      "长期主义": ["长期", "时间", "耐心", "复利", "持有", "等待", "永远"],
+      "决策方法": ["决策", "判断", "选择", "能力圈", "机会成本", "反过来", "方法"],
+      "风险管理": ["风险", "安全边际", "损失", "负债", "不确定", "错误", "缓冲"],
+      "情绪与纪律": ["情绪", "恐惧", "贪婪", "纪律", "冲动", "冷静", "性情"]
+    };
+    const scores = Object.entries(rules).map(([tag, words]) => ({ tag, score: words.reduce((sum, word) => sum + (text.includes(word) ? 1 : 0), 0) }));
+    if (type === "quote") scores.find(x => x.tag === "阅读摘录").score += 2;
+    if (type === "note") scores.find(x => x.tag === "个人思考").score += 2;
+    if (type === "article") scores.find(x => x.tag === "个人思考").score += 1;
+    return scores.filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 6).map(x => x.tag);
+  }
+
+  function renderTagSuggestions() {
+    const tagsInput = document.getElementById("postTags");
+    const selected = parseTags(tagsInput.value);
+    const suggestions = recommendTags(document.getElementById("postTitle").value, editor.getMarkdown(), document.getElementById("postType").value);
+    const node = document.getElementById("tagSuggestions");
+    node.innerHTML = suggestions.map(tag => `<button type="button" class="suggestion-chip ${selected.includes(tag) ? "active" : ""}" data-suggested-tag="${escapeHtml(tag)}"><i data-lucide="${selected.includes(tag) ? "check" : "plus"}"></i>${escapeHtml(tag)}</button>`).join("") || `<span>暂时没有匹配项，可以继续使用自定义标签。</span>`;
+    node.querySelectorAll("[data-suggested-tag]").forEach(button => button.addEventListener("click", () => {
+      const current = parseTags(tagsInput.value);
+      const tag = button.dataset.suggestedTag;
+      tagsInput.value = current.includes(tag) ? current.filter(x => x !== tag).join("，") : [...current, tag].join("，");
+      renderTagSuggestions();
+    }));
     refreshIcons();
   }
 
@@ -157,11 +197,12 @@
   }
 
   function renderStudio() {
+    if (!authoringAllowed) { renderNotFound(); return; }
     setActiveNav("studio");
     if (editor) { editor.destroy(); editor = null; }
     app.innerHTML = `<div class="studio-shell">
       <div class="studio-head"><div><h1>写作台</h1><p>像普通文档一样编辑，也可以随时切换到 Markdown 或预览。</p></div><div class="studio-actions"><button class="button" id="newDraft"><i data-lucide="file-plus"></i>新建</button><button class="button" id="saveDraft"><i data-lucide="save"></i>保存草稿</button><button class="button primary" id="exportMd"><i data-lucide="download"></i>导出 Markdown</button></div></div>
-      <input type="hidden" id="draftId"><div class="studio-meta"><div class="field"><label for="postTitle">标题</label><input id="postTitle" placeholder="给这篇文字起个标题"></div><div class="field"><label for="postType">类型</label><select id="postType"><option value="note">随笔</option><option value="quote">书摘</option><option value="article">长文</option></select></div><div class="field"><label for="postTags">标签</label><input id="postTags" placeholder="阅读，投资，思考"></div></div>
+      <input type="hidden" id="draftId"><div class="studio-meta"><div class="field"><label for="postTitle">标题</label><input id="postTitle" placeholder="给这篇文字起个标题"></div><div class="field"><label for="postType">类型</label><select id="postType"><option value="note">随笔</option><option value="quote">书摘</option><option value="article">长文</option></select></div><div class="field"><label for="postTags">标签</label><div class="tag-input-row"><input id="postTags" placeholder="个人思考，投资理财"><button class="button" id="recommendTags" type="button"><i data-lucide="sparkles"></i>推荐</button></div></div></div><div class="tag-recommender" id="tagSuggestions"><span>写完后点击“推荐”，选择符合内容的标签。</span></div>
       <div class="editor-wrap" id="editor"></div><p class="studio-note"><i data-lucide="lock"></i> 草稿只保存在当前浏览器，不会自动公开。发布到网站前请导出 Markdown 并纳入 Git 版本管理。</p>
       <section class="draft-drawer"><h2>本机草稿</h2><div class="draft-list" id="draftList"></div></section>
       <details class="import-panel"><summary>批量导入旧文字</summary><div class="import-grid"><div><textarea id="importText" placeholder="把以前写过的文字粘贴到这里……"></textarea><div class="import-options"><select id="splitMode"><option value="paragraph">按空行识别</option><option value="date">按日期识别</option><option value="line">每行一条</option></select><button class="button" id="detectImport"><i data-lucide="scan-text"></i>开始识别</button></div><p class="studio-note">识别只在浏览器中进行，内容不会上传到第三方服务。</p></div><div><div class="detected-list" id="detectedList"><div class="empty-state">识别结果会显示在这里。</div></div><div class="import-options"><button class="button primary" id="saveDetected" disabled><i data-lucide="save"></i>存为草稿</button></div></div></div></details>
@@ -176,6 +217,7 @@
     });
     document.getElementById("newDraft").addEventListener("click", () => { document.getElementById("draftId").value = ""; document.getElementById("postTitle").value = ""; document.getElementById("postTags").value = ""; editor.setMarkdown(""); toast("已新建空白文档"); });
     document.getElementById("exportMd").addEventListener("click", exportMarkdown);
+    document.getElementById("recommendTags").addEventListener("click", renderTagSuggestions);
     let detected = [];
     document.getElementById("detectImport").addEventListener("click", () => {
       detected = splitImportedText(document.getElementById("importText").value, document.getElementById("splitMode").value);
@@ -197,7 +239,8 @@
   function route() {
     const path = location.hash.slice(1) || "/";
     if (path === "/") renderHome();
-    else if (path === "/archive") renderArchive();
+    else if (path === "/archive") renderArchive("all");
+    else if (path.startsWith("/archive/tag/")) renderArchive(decodeURIComponent(path.slice(13)));
     else if (path === "/studio") renderStudio();
     else if (path.startsWith("/post/")) renderPost(decodeURIComponent(path.slice(6)));
     else renderNotFound();
@@ -205,6 +248,7 @@
   }
 
   document.getElementById("year").textContent = new Date().getFullYear();
+  document.querySelector('[data-nav="studio"]').hidden = !authoringAllowed;
   document.getElementById("mobileMenu").addEventListener("click", () => document.querySelector(".primary-nav").classList.toggle("open"));
   window.addEventListener("hashchange", route);
   route();
