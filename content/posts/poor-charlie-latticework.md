@@ -5,6 +5,8 @@ author: Jake
 date: 2026-09-07
 tags: [个人成长, 决策方法, 读书笔记]
 relatedSources: [charlie-munger, poor-charlies-almanack]
+viewpointStatus: exploring
+reviewDate: 2026-12-07
 summary: 零散知识很容易在需要时失效；把重要概念连接成模型，才能迁移到不同问题中。
 featured: false
 source: 《穷查理宝典》核心思想整理，非逐字引文
@@ -18,4 +20,3 @@ sourceUrl: ""
 ## 给自己的练习
 
 读到一个重要结论时，至少再写下三件事：它解决什么问题；它在什么条件下可能失效；它能与哪些已经掌握的模型连接。
-

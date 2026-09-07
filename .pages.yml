@@ -9,7 +9,7 @@ content:
     path: content/posts
     format: yaml-frontmatter
     view:
-      fields: [title, type, date, tags]
+      fields: [title, type, date, viewpointStatus, reviewDate, tags]
       primary: title
       sort: [date, title]
       search: [title, author, summary, body]
@@ -83,6 +83,56 @@ content:
               value: berkshire-letters
             - label: 聪明的投资者
               value: intelligent-investor
+      - name: viewpointStatus
+        label: 观点状态
+        type: select
+        default: exploring
+        options:
+          values:
+            - label: 探索中
+              value: exploring
+            - label: 暂时认同
+              value: considered
+            - label: 长期原则
+              value: principle
+            - label: 已修正
+              value: revised
+      - name: reviewDate
+        label: 下次复查日期
+        type: date
+      - name: reflections
+        label: 观点演进
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{date} · {stance}"
+        fields:
+          - name: date
+            label: 回看日期
+            type: date
+            required: true
+          - name: stance
+            label: 当前态度
+            type: select
+            required: true
+            options:
+              values:
+                - label: 补充
+                  value: supplement
+                - label: 修正
+                  value: revise
+                - label: 反驳
+                  value: challenge
+                - label: 仍然认同
+                  value: reaffirm
+          - name: target
+            label: 针对的旧观点
+            type: text
+          - name: body
+            label: 新的想法
+            type: rich-text
+            required: true
       - name: summary
         label: 摘要
         type: text

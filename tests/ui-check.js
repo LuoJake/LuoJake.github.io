@@ -21,6 +21,10 @@ async function check(condition, message) {
     const firstDailyQuote = await page.locator("#dailyText").innerText();
     await page.locator("#nextQuote").click();
     await check(await page.locator("#dailyText").innerText() !== firstDailyQuote, `${viewport.name}: 每日自省无法翻页`);
+    await page.locator("#randomPost").click();
+    await page.locator(".article-head").waitFor();
+    await check(new URL(page.url()).hash.startsWith("#/post/"), `${viewport.name}: 随机阅读没有进入文章`);
+    await page.goto(`${baseUrl}/#/`, { waitUntil: "networkidle" });
     const studioEnabled = await page.locator('[data-nav="studio"]').evaluate(node => !node.hidden);
     await check(studioEnabled === localAuthoring, `${viewport.name}: 写作台入口权限状态异常`);
     const dimensions = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
@@ -41,10 +45,18 @@ async function check(condition, message) {
     await page.locator(".article-body blockquote").waitFor();
     await check(await page.locator(".article-body blockquote").count() === 1, `${viewport.name}: 文章正文未渲染`);
 
+    await page.goto(`${baseUrl}/#/post/circle-of-competence`, { waitUntil: "networkidle" });
+    await check(await page.locator(".viewpoint-status.considered").innerText() === "暂时认同", `${viewport.name}: 观点状态未显示`);
+    await check((await page.locator(".review-date").innerText()).includes("2027年3月1日"), `${viewport.name}: 复查日期未显示`);
+    await check(await page.locator(".reflection-item").count() === 1, `${viewport.name}: 观点演进记录未显示`);
+    await check(await page.locator(".stance.supplement").innerText() === "补充", `${viewport.name}: 回看态度未显示`);
+
     await page.goto(`${baseUrl}/#/studio`, { waitUntil: "networkidle" });
     if (localAuthoring) {
       await check(await page.locator(".toastui-editor-defaultUI").count() === 1, `${viewport.name}: 可视化编辑器未加载`);
       await page.locator("#postTitle").fill("长期投资中的风险与决策");
+      await page.locator("#postViewpointStatus").selectOption("considered");
+      await page.locator("#postReviewDate").fill("2027-03-01");
       await page.locator("#recommendTags").click();
       await check(await page.locator(".suggestion-chip").count() >= 2, `${viewport.name}: 标签推荐结果不足`);
       await page.locator('[data-suggested-tag="投资理财"]').click();

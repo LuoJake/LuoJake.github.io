@@ -5,6 +5,8 @@ author: Jake
 date: 2026-08-30
 tags: [投资理财, 风险管理, 长文]
 relatedSources: [warren-buffett, intelligent-investor]
+viewpointStatus: considered
+reviewDate: 2027-03-01
 summary: 安全边际并不是追求绝对安全，而是承认估算会错、未来不可预测，并提前保留缓冲。
 featured: false
 source: 示例文章，参考格雷厄姆、巴菲特的安全边际思想

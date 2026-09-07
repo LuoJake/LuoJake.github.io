@@ -5,6 +5,8 @@ author: Jake
 date: 2026-09-02
 tags: [个人思考, 投资理财, 情绪与纪律]
 relatedSources: [warren-buffett]
+viewpointStatus: exploring
+reviewDate: 2026-12-01
 summary: 聪明并不能自动带来好结果。没有稳定的行为方式，知识可能只会帮助人更有说服力地犯错。
 featured: false
 source: 据巴菲特关于投资者气质的公开论述整理

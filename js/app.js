@@ -13,6 +13,8 @@
 
   const typeLabels = { quote: "书摘", note: "随笔", article: "长文" };
   const typeIcons = { quote: "quote", note: "feather", article: "file-text" };
+  const viewpointLabels = { exploring: "探索中", considered: "暂时认同", principle: "长期原则", revised: "已修正" };
+  const stanceLabels = { supplement: "补充", revise: "修正", challenge: "反驳", reaffirm: "仍然认同" };
 
   function escapeHtml(value = "") {
     return String(value).replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
@@ -65,7 +67,7 @@
     </section>
     <section class="control-band"><div class="page-shell controls">
       <div class="search-box"><i data-lucide="search"></i><input id="searchInput" type="search" placeholder="搜索标题、正文、作者或标签" autocomplete="off"><button id="searchClear" class="search-clear" aria-label="清除搜索"><i data-lucide="x"></i></button></div>
-      <div class="filter-tabs" role="tablist">${[["all","全部"],["quote","书摘"],["note","随笔"],["article","长文"]].map(([id,label]) => `<button data-filter="${id}" class="${activeFilter === id ? "active" : ""}">${label}</button>`).join("")}</div>
+      <div class="home-actions"><div class="filter-tabs" role="tablist">${[["all","全部"],["quote","书摘"],["note","随笔"],["article","长文"]].map(([id,label]) => `<button data-filter="${id}" class="${activeFilter === id ? "active" : ""}">${label}</button>`).join("")}</div><button class="button random-button" id="randomPost"><i data-lucide="shuffle"></i>随机阅读</button></div>
     </div></section>
     <section class="page-shell content-section"><div class="section-head"><h2>最近更新</h2><p id="resultCount">共 ${posts.length} 篇</p></div><div class="content-grid" id="contentGrid"></div></section>`;
     const grid = document.getElementById("contentGrid");
@@ -85,6 +87,10 @@
     }
     document.getElementById("previousQuote").addEventListener("click", () => turnDailyQuote(-1));
     document.getElementById("nextQuote").addEventListener("click", () => turnDailyQuote(1));
+    document.getElementById("randomPost").addEventListener("click", () => {
+      const post = posts[Math.floor(Math.random() * posts.length)];
+      if (post) location.hash = `/post/${post.id}`;
+    });
     function update() {
       const q = search.value.trim().toLowerCase();
       const visible = posts.filter(p => (activeFilter === "all" || p.type === activeFilter) && (!q || [p.title, p.author, p.summary, p.body, ...p.tags].join(" ").toLowerCase().includes(q)));
@@ -108,10 +114,13 @@
     const post = posts.find(p => p.id === id);
     if (!post) { renderNotFound(); return; }
     setActiveNav("");
+    const reflections = Array.isArray(post.reflections) ? post.reflections : [];
+    const reflectionTimeline = reflections.length ? `<section class="thought-history"><div class="thought-history-head"><div><span>THOUGHT LOG</span><h2>观点演进</h2></div><p>${reflections.length} 次回看</p></div>${reflections.map(item => `<article class="reflection-item"><div class="reflection-meta"><time>${formatDate(item.date)}</time><span class="stance ${escapeHtml(item.stance)}">${stanceLabels[item.stance] || "回看"}</span></div>${item.target ? `<blockquote>${escapeHtml(item.target)}</blockquote>` : ""}<div>${renderMarkdown(item.body || "")}</div></article>`).join("")}</section>` : "";
     app.innerHTML = `<article class="article-shell">
       <a class="back-link" href="#/"><i data-lucide="arrow-left"></i>返回阅读</a>
-      <header class="article-head"><span class="entry-type"><i data-lucide="${typeIcons[post.type]}"></i>${typeLabels[post.type]}</span><h1>${escapeHtml(post.title)}</h1><div class="article-info"><span>${escapeHtml(post.author)}</span><time>${formatDate(post.date)}</time>${post.tags.map(t => `<a class="tag" href="${tagUrl(t)}">${escapeHtml(t)}</a>`).join("")}</div></header>
+      <header class="article-head"><div class="article-kicker"><span class="entry-type"><i data-lucide="${typeIcons[post.type]}"></i>${typeLabels[post.type]}</span>${post.viewpointStatus ? `<span class="viewpoint-status ${escapeHtml(post.viewpointStatus)}">${viewpointLabels[post.viewpointStatus] || "观点记录"}</span>` : ""}</div><h1>${escapeHtml(post.title)}</h1><div class="article-info"><span>${escapeHtml(post.author)}</span><time>${formatDate(post.date)}</time>${post.reviewDate ? `<span class="review-date"><i data-lucide="calendar-clock"></i>${formatDate(post.reviewDate)}复查</span>` : ""}${post.tags.map(t => `<a class="tag" href="${tagUrl(t)}">${escapeHtml(t)}</a>`).join("")}</div></header>
       <div class="article-body">${renderMarkdown(post.body)}</div>
+      ${reflectionTimeline}
       <div class="source-box"><strong>出处说明：</strong> ${escapeHtml(post.source)} ${post.sourceUrl ? `<a href="${escapeHtml(post.sourceUrl)}" target="_blank" rel="noopener">查看原始来源</a>` : ""}</div>
     </article>`;
     window.scrollTo(0, 0);
@@ -209,10 +218,13 @@
     const author = document.getElementById("postAuthor").value.trim() || "Jake";
     const source = document.getElementById("postSource").value.trim();
     const relatedSource = document.getElementById("postRelatedSource").value;
+    const viewpointStatus = document.getElementById("postViewpointStatus").value;
+    const reviewDate = document.getElementById("postReviewDate").value;
     const tags = parseTags(document.getElementById("postTags").value);
     const md = editor.getMarkdown();
     const summary = md.replace(/^#+\s+/gm, "").replace(/^>\s?/gm, "").replace(/[*_`\[\]]/g, "").replace(/\s+/g, " ").trim().slice(0, 100);
-    const frontmatter = `---\ntitle: ${JSON.stringify(title)}\ntype: ${type}\nauthor: ${JSON.stringify(author)}\ndate: ${new Date().toISOString().slice(0,10)}\ntags: ${JSON.stringify(tags.length ? tags : ["待整理"])}\nrelatedSources: ${JSON.stringify(relatedSource ? [relatedSource] : [])}\nsummary: ${JSON.stringify(summary || title)}\nfeatured: false\nsource: ${JSON.stringify(source)}\nsourceUrl: ""\n---\n\n`;
+    const viewpointFields = `${viewpointStatus ? `viewpointStatus: ${viewpointStatus}\n` : ""}${reviewDate ? `reviewDate: ${reviewDate}\n` : ""}`;
+    const frontmatter = `---\ntitle: ${JSON.stringify(title)}\ntype: ${type}\nauthor: ${JSON.stringify(author)}\ndate: ${new Date().toISOString().slice(0,10)}\ntags: ${JSON.stringify(tags.length ? tags : ["待整理"])}\nrelatedSources: ${JSON.stringify(relatedSource ? [relatedSource] : [])}\n${viewpointFields}summary: ${JSON.stringify(summary || title)}\nfeatured: false\nsource: ${JSON.stringify(source)}\nsourceUrl: ""\n---\n\n`;
     const blob = new Blob([frontmatter + md], { type: "text/markdown;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob); link.download = `${slugify(title)}.md`; link.click();
@@ -227,7 +239,7 @@
     list.querySelectorAll("[data-draft]").forEach(btn => btn.addEventListener("click", () => {
       const draft = getDrafts().find(d => d.id === btn.dataset.draft);
       if (!draft) return;
-      document.getElementById("draftId").value = draft.id; document.getElementById("postTitle").value = draft.title; document.getElementById("postType").value = draft.type; document.getElementById("postAuthor").value = draft.author || "Jake"; document.getElementById("postTags").value = draft.tags; document.getElementById("postSource").value = draft.source || ""; document.getElementById("postRelatedSource").value = draft.relatedSource || ""; editor.setMarkdown(draft.body); toast("草稿已打开");
+      document.getElementById("draftId").value = draft.id; document.getElementById("postTitle").value = draft.title; document.getElementById("postType").value = draft.type; document.getElementById("postAuthor").value = draft.author || "Jake"; document.getElementById("postTags").value = draft.tags; document.getElementById("postSource").value = draft.source || ""; document.getElementById("postRelatedSource").value = draft.relatedSource || ""; document.getElementById("postViewpointStatus").value = draft.viewpointStatus || "exploring"; document.getElementById("postReviewDate").value = draft.reviewDate || ""; editor.setMarkdown(draft.body); toast("草稿已打开");
     }));
   }
 
@@ -279,7 +291,7 @@
     const sourceOptions = sources.map(source => `<option value="${escapeHtml(source.id)}">${escapeHtml(source.name)}</option>`).join("");
     app.innerHTML = `<div class="studio-shell">
       <div class="studio-head"><div><h1>写作台</h1><p>像普通文档一样编辑，也可以随时切换到 Markdown 或预览。</p></div><div class="studio-actions"><button class="button" id="newDraft"><i data-lucide="file-plus"></i>新建</button><button class="button" id="saveDraft"><i data-lucide="save"></i>保存草稿</button><button class="button primary" id="exportMd"><i data-lucide="download"></i>导出 Markdown</button></div></div>
-      <input type="hidden" id="draftId"><div class="studio-meta"><div class="field"><label for="postTitle">标题</label><input id="postTitle" placeholder="给这篇文字起个标题"></div><div class="field"><label for="postType">类型</label><select id="postType"><option value="note">随笔</option><option value="quote">书摘</option><option value="article">长文</option></select></div><div class="field"><label for="postAuthor">作者</label><input id="postAuthor" value="Jake" placeholder="作者或整理者"></div></div><div class="studio-meta secondary"><div class="field"><label for="postTags">标签</label><div class="tag-input-row"><input id="postTags" placeholder="个人思考，投资理财"><button class="button" id="recommendTags" type="button"><i data-lucide="sparkles"></i>推荐</button></div></div><div class="field"><label for="postSource">出处</label><input id="postSource" placeholder="书名、文章或演讲"></div><div class="field"><label for="postRelatedSource">关联人物或书籍</label><select id="postRelatedSource"><option value="">暂不关联</option>${sourceOptions}</select></div></div><div class="tag-recommender" id="tagSuggestions"><span>写完后点击“推荐”，选择符合内容的标签。</span></div>
+      <input type="hidden" id="draftId"><div class="studio-meta"><div class="field"><label for="postTitle">标题</label><input id="postTitle" placeholder="给这篇文字起个标题"></div><div class="field"><label for="postType">类型</label><select id="postType"><option value="note">随笔</option><option value="quote">书摘</option><option value="article">长文</option></select></div><div class="field"><label for="postAuthor">作者</label><input id="postAuthor" value="Jake" placeholder="作者或整理者"></div></div><div class="studio-meta secondary"><div class="field"><label for="postTags">标签</label><div class="tag-input-row"><input id="postTags" placeholder="个人思考，投资理财"><button class="button" id="recommendTags" type="button"><i data-lucide="sparkles"></i>推荐</button></div></div><div class="field"><label for="postSource">出处</label><input id="postSource" placeholder="书名、文章或演讲"></div><div class="field"><label for="postRelatedSource">关联人物或书籍</label><select id="postRelatedSource"><option value="">暂不关联</option>${sourceOptions}</select></div></div><div class="studio-meta viewpoint-fields"><div class="field"><label for="postViewpointStatus">观点状态</label><select id="postViewpointStatus"><option value="exploring">探索中</option><option value="considered">暂时认同</option><option value="principle">长期原则</option><option value="revised">已修正</option></select></div><div class="field"><label for="postReviewDate">下次复查日期</label><input id="postReviewDate" type="date"></div></div><div class="tag-recommender" id="tagSuggestions"><span>写完后点击“推荐”，选择符合内容的标签。</span></div>
       <div class="editor-wrap" id="editor"></div><p class="studio-note"><i data-lucide="lock"></i> 草稿只保存在当前浏览器，不会自动公开。发布到网站前请导出 Markdown 并纳入 Git 版本管理。</p>
       <section class="draft-drawer"><h2>本机草稿</h2><div class="draft-list" id="draftList"></div></section>
       <details class="import-panel"><summary>导入旧文字或书籍 PDF</summary><div class="import-filebar"><input id="importFile" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain"><label class="button" for="importFile"><i data-lucide="file-up"></i>选择 PDF / TXT / MD</label><span id="importFileName">也可以直接粘贴文字</span></div><div class="import-source-meta"><div class="field"><label for="importAuthor">原作者</label><input id="importAuthor" placeholder="例如：查理·芒格"></div><div class="field"><label for="importSource">书名或出处</label><input id="importSource" placeholder="例如：《穷查理宝典》"></div></div><div class="import-grid"><div><textarea id="importText" placeholder="文件文字会出现在这里，也可以直接粘贴……"></textarea><div class="import-options"><select id="splitMode"><option value="candidate">智能发现短句</option><option value="paragraph">按空行识别</option><option value="date">按日期识别</option><option value="line">每行一条</option></select><button class="button" id="detectImport"><i data-lucide="scan-text"></i>开始识别</button></div><p class="studio-note">文件只在当前浏览器处理；发布前请核对原文、作者、版本与引用范围。</p></div><div><div class="detected-list" id="detectedList"><div class="empty-state">候选内容会显示在这里。</div></div><div class="import-options"><button class="button primary" id="saveDetected" disabled><i data-lucide="save"></i>将选中项存为草稿</button></div></div></div></details>
@@ -288,11 +300,11 @@
     document.getElementById("saveDraft").addEventListener("click", () => {
       const idNode = document.getElementById("draftId");
       const drafts = getDrafts();
-      const draft = { id: idNode.value || crypto.randomUUID(), title: document.getElementById("postTitle").value.trim(), type: document.getElementById("postType").value, author: document.getElementById("postAuthor").value.trim(), tags: document.getElementById("postTags").value, source: document.getElementById("postSource").value.trim(), relatedSource: document.getElementById("postRelatedSource").value, body: editor.getMarkdown(), updated: new Date().toISOString() };
+      const draft = { id: idNode.value || crypto.randomUUID(), title: document.getElementById("postTitle").value.trim(), type: document.getElementById("postType").value, author: document.getElementById("postAuthor").value.trim(), tags: document.getElementById("postTags").value, source: document.getElementById("postSource").value.trim(), relatedSource: document.getElementById("postRelatedSource").value, viewpointStatus: document.getElementById("postViewpointStatus").value, reviewDate: document.getElementById("postReviewDate").value, body: editor.getMarkdown(), updated: new Date().toISOString() };
       const index = drafts.findIndex(d => d.id === draft.id); if (index >= 0) drafts[index] = draft; else drafts.push(draft);
       saveDrafts(drafts); idNode.value = draft.id; renderDraftList(); toast("草稿已保存在这台浏览器");
     });
-    document.getElementById("newDraft").addEventListener("click", () => { document.getElementById("draftId").value = ""; document.getElementById("postTitle").value = ""; document.getElementById("postAuthor").value = "Jake"; document.getElementById("postTags").value = ""; document.getElementById("postSource").value = ""; document.getElementById("postRelatedSource").value = ""; editor.setMarkdown(""); toast("已新建空白文档"); });
+    document.getElementById("newDraft").addEventListener("click", () => { document.getElementById("draftId").value = ""; document.getElementById("postTitle").value = ""; document.getElementById("postAuthor").value = "Jake"; document.getElementById("postTags").value = ""; document.getElementById("postSource").value = ""; document.getElementById("postRelatedSource").value = ""; document.getElementById("postViewpointStatus").value = "exploring"; document.getElementById("postReviewDate").value = ""; editor.setMarkdown(""); toast("已新建空白文档"); });
     document.getElementById("exportMd").addEventListener("click", exportMarkdown);
     document.getElementById("recommendTags").addEventListener("click", renderTagSuggestions);
     let detected = [];

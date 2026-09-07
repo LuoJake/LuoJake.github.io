@@ -5,6 +5,13 @@ author: Jake
 date: 2026-09-04
 tags: [个人思考, 投资理财, 决策方法]
 relatedSources: [warren-buffett, charlie-munger, berkshire-letters]
+viewpointStatus: considered
+reviewDate: 2027-03-01
+reflections:
+  - date: 2026-09-07
+    stance: supplement
+    target: 能力圈的边界，比大小更重要。
+    body: 边界不是用来拒绝所有陌生事物，而是提醒我先学习、再判断。真正需要避免的是在还没有理解时就投入不可承受的资本。
 summary: 投资不要求理解所有机会，只要求能诚实判断哪些问题已经超出自己的理解范围。
 featured: false
 source: 据巴菲特与芒格关于能力圈的多次论述整理
