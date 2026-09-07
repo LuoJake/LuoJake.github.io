@@ -2,6 +2,7 @@
   const app = document.getElementById("app");
   const posts = window.GARDEN_POSTS || [];
   const dailyQuotes = window.DAILY_QUOTES || [];
+  const sources = window.GARDEN_SOURCES || [];
   let editor = null;
   let activeFilter = "all";
   let archiveTag = "all";
@@ -127,6 +128,33 @@
     refreshIcons();
   }
 
+  function relatedPosts(sourceId) {
+    return posts.filter(post => (post.relatedSources || []).includes(sourceId));
+  }
+
+  function renderLibrary() {
+    setActiveNav("library");
+    const people = sources.filter(source => source.type === "person");
+    const books = sources.filter(source => source.type === "book");
+    const sourceCards = items => items.map(source => {
+      const count = relatedPosts(source.id).length;
+      return `<a class="source-card" href="#/source/${encodeURIComponent(source.id)}"><span class="source-mark"><i data-lucide="${source.type === "person" ? "user-round" : "book-open"}"></i></span><div><span class="source-kind">${source.type === "person" ? "人物" : "书籍 / 文集"}</span><h3>${escapeHtml(source.name)}</h3><p>${escapeHtml(source.subtitle || source.intro)}</p><div class="source-themes">${(source.themes || []).map(theme => `<span>${escapeHtml(theme)}</span>`).join("")}</div><small>${count} 篇相关内容</small></div></a>`;
+    }).join("");
+    app.innerHTML = `<div class="page-shell library-shell"><header class="library-head"><p class="eyebrow">PEOPLE & BOOKS</p><h1>人物与书籍</h1><p>从一个人或一本书出发，重新找到散落在不同时间里的摘录与思考。</p></header><section class="source-section"><div class="section-head"><h2>人物</h2><p>${people.length} 位</p></div><div class="source-grid">${sourceCards(people)}</div></section><section class="source-section"><div class="section-head"><h2>书籍与文集</h2><p>${books.length} 本</p></div><div class="source-grid">${sourceCards(books)}</div></section></div>`;
+    refreshIcons();
+  }
+
+  function renderSource(id) {
+    const source = sources.find(item => item.id === id);
+    if (!source) { renderNotFound(); return; }
+    setActiveNav("library");
+    const sourcePosts = relatedPosts(source.id);
+    const sourceQuotes = dailyQuotes.filter(quote => quote.sourceId === source.id);
+    app.innerHTML = `<div class="source-profile"><div class="page-shell source-profile-inner"><a class="back-link" href="#/library"><i data-lucide="arrow-left"></i>返回人物与书籍</a><div class="source-profile-title"><span class="source-mark large"><i data-lucide="${source.type === "person" ? "user-round" : "book-open"}"></i></span><div><span class="source-kind">${source.type === "person" ? "人物" : "书籍 / 文集"}</span><h1>${escapeHtml(source.name)}</h1><p>${escapeHtml(source.subtitle || "")}</p></div></div><p class="source-intro">${escapeHtml(source.intro)}</p><div class="source-themes">${(source.themes || []).map(theme => posts.some(post => post.tags.includes(theme)) ? `<a href="${tagUrl(theme)}">${escapeHtml(theme)}</a>` : `<span>${escapeHtml(theme)}</span>`).join("")}</div></div></div><div class="page-shell source-content">${sourceQuotes.length ? `<section class="source-quotes"><div class="section-head"><h2>每日自省收录</h2><p>${sourceQuotes.length} 条</p></div>${sourceQuotes.map(quote => `<blockquote>“${escapeHtml(quote.text)}”<cite>${escapeHtml(quote.author)}</cite></blockquote>`).join("")}</section>` : ""}<section><div class="section-head"><h2>相关文章与书摘</h2><p>${sourcePosts.length} 篇</p></div><div class="content-grid">${sourcePosts.length ? sourcePosts.map(card).join("") : `<div class="empty-state"><i data-lucide="notebook-pen"></i><p>还没有关联内容，可以从管理后台添加第一篇。</p></div>`}</div></section></div>`;
+    window.scrollTo(0, 0);
+    refreshIcons();
+  }
+
   function parseTags(value) {
     return [...new Set(value.split(/[,，]/).map(x => x.trim()).filter(Boolean))];
   }
@@ -178,9 +206,13 @@
   function exportMarkdown() {
     const title = document.getElementById("postTitle").value.trim() || "未命名文字";
     const type = document.getElementById("postType").value;
-    const tags = document.getElementById("postTags").value.split(/[,，]/).map(x => x.trim()).filter(Boolean);
+    const author = document.getElementById("postAuthor").value.trim() || "Jake";
+    const source = document.getElementById("postSource").value.trim();
+    const relatedSource = document.getElementById("postRelatedSource").value;
+    const tags = parseTags(document.getElementById("postTags").value);
     const md = editor.getMarkdown();
-    const frontmatter = `---\ntitle: "${title.replace(/"/g, '\\"')}"\ntype: ${type}\ndate: ${new Date().toISOString().slice(0,10)}\ntags: [${tags.map(t => `"${t.replace(/"/g, '\\"')}"`).join(", ")}]\n---\n\n`;
+    const summary = md.replace(/^#+\s+/gm, "").replace(/^>\s?/gm, "").replace(/[*_`\[\]]/g, "").replace(/\s+/g, " ").trim().slice(0, 100);
+    const frontmatter = `---\ntitle: ${JSON.stringify(title)}\ntype: ${type}\nauthor: ${JSON.stringify(author)}\ndate: ${new Date().toISOString().slice(0,10)}\ntags: ${JSON.stringify(tags.length ? tags : ["待整理"])}\nrelatedSources: ${JSON.stringify(relatedSource ? [relatedSource] : [])}\nsummary: ${JSON.stringify(summary || title)}\nfeatured: false\nsource: ${JSON.stringify(source)}\nsourceUrl: ""\n---\n\n`;
     const blob = new Blob([frontmatter + md], { type: "text/markdown;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob); link.download = `${slugify(title)}.md`; link.click();
@@ -195,7 +227,7 @@
     list.querySelectorAll("[data-draft]").forEach(btn => btn.addEventListener("click", () => {
       const draft = getDrafts().find(d => d.id === btn.dataset.draft);
       if (!draft) return;
-      document.getElementById("draftId").value = draft.id; document.getElementById("postTitle").value = draft.title; document.getElementById("postType").value = draft.type; document.getElementById("postTags").value = draft.tags; editor.setMarkdown(draft.body); toast("草稿已打开");
+      document.getElementById("draftId").value = draft.id; document.getElementById("postTitle").value = draft.title; document.getElementById("postType").value = draft.type; document.getElementById("postAuthor").value = draft.author || "Jake"; document.getElementById("postTags").value = draft.tags; document.getElementById("postSource").value = draft.source || ""; document.getElementById("postRelatedSource").value = draft.relatedSource || ""; editor.setMarkdown(draft.body); toast("草稿已打开");
     }));
   }
 
@@ -203,6 +235,15 @@
     const clean = text.replace(/\r/g, "").trim();
     if (!clean) return [];
     let chunks;
+    if (mode === "candidate") {
+      const keywords = ["价值", "价格", "投资", "市场", "企业", "风险", "选择", "思考", "时间", "长期", "习惯", "努力", "智慧", "学习", "人生", "自由", "纪律", "错误", "决策", "机会"];
+      const seen = new Set();
+      return clean.replace(/([。！？!?；;])/g, "$1\n").split(/\n+/).map(sentence => sentence.replace(/\s+/g, " ").trim()).filter(sentence => {
+        if (sentence.length < 18 || sentence.length > 180 || seen.has(sentence)) return false;
+        if (/目录|版权|出版社|ISBN|第\s*\d+\s*页|www\.|https?:/i.test(sentence)) return false;
+        seen.add(sentence); return true;
+      }).map(sentence => ({ body: sentence, score: keywords.reduce((sum, word) => sum + (sentence.includes(word) ? 2 : 0), 0) + (/[“”"'「」]/.test(sentence) ? 2 : 0) + (sentence.length >= 28 && sentence.length <= 100 ? 1 : 0) })).sort((a, b) => b.score - a.score).slice(0, 50).map((item, index) => ({ title: item.body.length <= 32 ? item.body : `${item.body.slice(0, 28)}…`, body: item.body, index }));
+    }
     if (mode === "line") chunks = clean.split(/\n+/);
     else if (mode === "date") chunks = clean.split(/(?=^(?:20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}日?))/m);
     else chunks = clean.split(/\n\s*\n+/);
@@ -214,36 +255,73 @@
     }).filter(x => x.body);
   }
 
+  async function readImportFile(file) {
+    if (!file) return "";
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      if (!window.pdfjsLib) throw new Error("PDF 解析组件未加载");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      const pages = [];
+      for (let number = 1; number <= pdf.numPages; number += 1) {
+        const page = await pdf.getPage(number);
+        const content = await page.getTextContent();
+        pages.push(content.items.map(item => `${item.str}${item.hasEOL ? "\n" : " "}`).join(""));
+      }
+      return pages.join("\n");
+    }
+    return file.text();
+  }
+
   function renderStudio() {
     if (!authoringAllowed) { renderNotFound(); return; }
     setActiveNav("studio");
     if (editor) { editor.destroy(); editor = null; }
+    const sourceOptions = sources.map(source => `<option value="${escapeHtml(source.id)}">${escapeHtml(source.name)}</option>`).join("");
     app.innerHTML = `<div class="studio-shell">
       <div class="studio-head"><div><h1>写作台</h1><p>像普通文档一样编辑，也可以随时切换到 Markdown 或预览。</p></div><div class="studio-actions"><button class="button" id="newDraft"><i data-lucide="file-plus"></i>新建</button><button class="button" id="saveDraft"><i data-lucide="save"></i>保存草稿</button><button class="button primary" id="exportMd"><i data-lucide="download"></i>导出 Markdown</button></div></div>
-      <input type="hidden" id="draftId"><div class="studio-meta"><div class="field"><label for="postTitle">标题</label><input id="postTitle" placeholder="给这篇文字起个标题"></div><div class="field"><label for="postType">类型</label><select id="postType"><option value="note">随笔</option><option value="quote">书摘</option><option value="article">长文</option></select></div><div class="field"><label for="postTags">标签</label><div class="tag-input-row"><input id="postTags" placeholder="个人思考，投资理财"><button class="button" id="recommendTags" type="button"><i data-lucide="sparkles"></i>推荐</button></div></div></div><div class="tag-recommender" id="tagSuggestions"><span>写完后点击“推荐”，选择符合内容的标签。</span></div>
+      <input type="hidden" id="draftId"><div class="studio-meta"><div class="field"><label for="postTitle">标题</label><input id="postTitle" placeholder="给这篇文字起个标题"></div><div class="field"><label for="postType">类型</label><select id="postType"><option value="note">随笔</option><option value="quote">书摘</option><option value="article">长文</option></select></div><div class="field"><label for="postAuthor">作者</label><input id="postAuthor" value="Jake" placeholder="作者或整理者"></div></div><div class="studio-meta secondary"><div class="field"><label for="postTags">标签</label><div class="tag-input-row"><input id="postTags" placeholder="个人思考，投资理财"><button class="button" id="recommendTags" type="button"><i data-lucide="sparkles"></i>推荐</button></div></div><div class="field"><label for="postSource">出处</label><input id="postSource" placeholder="书名、文章或演讲"></div><div class="field"><label for="postRelatedSource">关联人物或书籍</label><select id="postRelatedSource"><option value="">暂不关联</option>${sourceOptions}</select></div></div><div class="tag-recommender" id="tagSuggestions"><span>写完后点击“推荐”，选择符合内容的标签。</span></div>
       <div class="editor-wrap" id="editor"></div><p class="studio-note"><i data-lucide="lock"></i> 草稿只保存在当前浏览器，不会自动公开。发布到网站前请导出 Markdown 并纳入 Git 版本管理。</p>
       <section class="draft-drawer"><h2>本机草稿</h2><div class="draft-list" id="draftList"></div></section>
-      <details class="import-panel"><summary>批量导入旧文字</summary><div class="import-grid"><div><textarea id="importText" placeholder="把以前写过的文字粘贴到这里……"></textarea><div class="import-options"><select id="splitMode"><option value="paragraph">按空行识别</option><option value="date">按日期识别</option><option value="line">每行一条</option></select><button class="button" id="detectImport"><i data-lucide="scan-text"></i>开始识别</button></div><p class="studio-note">识别只在浏览器中进行，内容不会上传到第三方服务。</p></div><div><div class="detected-list" id="detectedList"><div class="empty-state">识别结果会显示在这里。</div></div><div class="import-options"><button class="button primary" id="saveDetected" disabled><i data-lucide="save"></i>存为草稿</button></div></div></div></details>
+      <details class="import-panel"><summary>导入旧文字或书籍 PDF</summary><div class="import-filebar"><input id="importFile" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain"><label class="button" for="importFile"><i data-lucide="file-up"></i>选择 PDF / TXT / MD</label><span id="importFileName">也可以直接粘贴文字</span></div><div class="import-source-meta"><div class="field"><label for="importAuthor">原作者</label><input id="importAuthor" placeholder="例如：查理·芒格"></div><div class="field"><label for="importSource">书名或出处</label><input id="importSource" placeholder="例如：《穷查理宝典》"></div></div><div class="import-grid"><div><textarea id="importText" placeholder="文件文字会出现在这里，也可以直接粘贴……"></textarea><div class="import-options"><select id="splitMode"><option value="candidate">智能发现短句</option><option value="paragraph">按空行识别</option><option value="date">按日期识别</option><option value="line">每行一条</option></select><button class="button" id="detectImport"><i data-lucide="scan-text"></i>开始识别</button></div><p class="studio-note">文件只在当前浏览器处理；发布前请核对原文、作者、版本与引用范围。</p></div><div><div class="detected-list" id="detectedList"><div class="empty-state">候选内容会显示在这里。</div></div><div class="import-options"><button class="button primary" id="saveDetected" disabled><i data-lucide="save"></i>将选中项存为草稿</button></div></div></div></details>
     </div>`;
     editor = new toastui.Editor({ el: document.querySelector("#editor"), height: "610px", initialEditType: "wysiwyg", previewStyle: "vertical", usageStatistics: false, hideModeSwitch: false, language: "zh-CN", initialValue: "## 从这里开始写\n\n可以直接输入普通文字，选中文字后使用上方工具栏排版。\n\n> 这里可以放一段值得收藏的句子。\n\n然后写下自己的理解。" });
     document.getElementById("saveDraft").addEventListener("click", () => {
       const idNode = document.getElementById("draftId");
       const drafts = getDrafts();
-      const draft = { id: idNode.value || crypto.randomUUID(), title: document.getElementById("postTitle").value.trim(), type: document.getElementById("postType").value, tags: document.getElementById("postTags").value, body: editor.getMarkdown(), updated: new Date().toISOString() };
+      const draft = { id: idNode.value || crypto.randomUUID(), title: document.getElementById("postTitle").value.trim(), type: document.getElementById("postType").value, author: document.getElementById("postAuthor").value.trim(), tags: document.getElementById("postTags").value, source: document.getElementById("postSource").value.trim(), relatedSource: document.getElementById("postRelatedSource").value, body: editor.getMarkdown(), updated: new Date().toISOString() };
       const index = drafts.findIndex(d => d.id === draft.id); if (index >= 0) drafts[index] = draft; else drafts.push(draft);
       saveDrafts(drafts); idNode.value = draft.id; renderDraftList(); toast("草稿已保存在这台浏览器");
     });
-    document.getElementById("newDraft").addEventListener("click", () => { document.getElementById("draftId").value = ""; document.getElementById("postTitle").value = ""; document.getElementById("postTags").value = ""; editor.setMarkdown(""); toast("已新建空白文档"); });
+    document.getElementById("newDraft").addEventListener("click", () => { document.getElementById("draftId").value = ""; document.getElementById("postTitle").value = ""; document.getElementById("postAuthor").value = "Jake"; document.getElementById("postTags").value = ""; document.getElementById("postSource").value = ""; document.getElementById("postRelatedSource").value = ""; editor.setMarkdown(""); toast("已新建空白文档"); });
     document.getElementById("exportMd").addEventListener("click", exportMarkdown);
     document.getElementById("recommendTags").addEventListener("click", renderTagSuggestions);
     let detected = [];
+    function renderDetected() {
+      document.getElementById("detectedList").innerHTML = detected.length ? detected.map((x,i) => `<label class="detected-item"><input type="checkbox" data-detected-index="${i}" checked><span><strong>${i+1}. ${escapeHtml(x.title)}</strong><span>${escapeHtml(x.body.slice(0,120))}${x.body.length > 120 ? "…" : ""}</span></span></label>`).join("") : `<div class="empty-state">没有识别到内容。</div>`;
+      document.getElementById("saveDetected").disabled = !detected.length;
+    }
+    document.getElementById("importFile").addEventListener("change", async event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const label = document.getElementById("importFileName");
+      label.textContent = `正在读取 ${file.name}…`;
+      try {
+        document.getElementById("importText").value = await readImportFile(file);
+        if (!document.getElementById("importSource").value) document.getElementById("importSource").value = file.name.replace(/\.[^.]+$/, "");
+        detected = splitImportedText(document.getElementById("importText").value, "candidate");
+        renderDetected(); label.textContent = `${file.name} · 发现 ${detected.length} 条候选`;
+      } catch (error) { label.textContent = file.name; toast(error.message || "文件读取失败"); }
+    });
     document.getElementById("detectImport").addEventListener("click", () => {
       detected = splitImportedText(document.getElementById("importText").value, document.getElementById("splitMode").value);
-      document.getElementById("detectedList").innerHTML = detected.length ? detected.map((x,i) => `<div class="detected-item"><strong>${i+1}. ${escapeHtml(x.title)}</strong><span>${escapeHtml(x.body.slice(0,90))}${x.body.length > 90 ? "…" : ""}</span></div>`).join("") : `<div class="empty-state">没有识别到内容。</div>`;
-      document.getElementById("saveDetected").disabled = !detected.length;
+      renderDetected();
     });
     document.getElementById("saveDetected").addEventListener("click", () => {
-      const drafts = getDrafts(); detected.forEach(x => drafts.push({ id: crypto.randomUUID(), title: x.title, type: "note", tags: "待整理", body: x.body, updated: new Date().toISOString() })); saveDrafts(drafts); renderDraftList(); toast(`已保存 ${detected.length} 条草稿`);
+      const selected = [...document.querySelectorAll("[data-detected-index]:checked")].map(input => detected[Number(input.dataset.detectedIndex)]);
+      const author = document.getElementById("importAuthor").value.trim() || "待补充";
+      const source = document.getElementById("importSource").value.trim();
+      const related = sources.find(item => item.name.includes(author.replace(/[《》]/g, "")) || author.includes(item.name))?.id || "";
+      const drafts = getDrafts(); selected.forEach(x => drafts.push({ id: crypto.randomUUID(), title: x.title, type: "quote", author, tags: "阅读摘录，待整理", source, relatedSource: related, body: `> ${x.body}\n\n## 我的思考\n\n`, updated: new Date().toISOString() })); saveDrafts(drafts); renderDraftList(); toast(`已保存 ${selected.length} 条草稿`);
     });
     renderDraftList(); refreshIcons();
   }
@@ -259,6 +337,8 @@
     if (path === "/") renderHome();
     else if (path === "/archive") renderArchive("all");
     else if (path.startsWith("/archive/tag/")) renderArchive(decodeURIComponent(path.slice(13)));
+    else if (path === "/library") renderLibrary();
+    else if (path.startsWith("/source/")) renderSource(decodeURIComponent(path.slice(8)));
     else if (path === "/studio") renderStudio();
     else if (path.startsWith("/post/")) renderPost(decodeURIComponent(path.slice(6)));
     else renderNotFound();

@@ -4,6 +4,7 @@ type: note
 author: Jake
 date: 2026-09-04
 tags: [个人思考, 投资理财, 决策方法]
+relatedSources: [warren-buffett, charlie-munger, berkshire-letters]
 summary: 投资不要求理解所有机会，只要求能诚实判断哪些问题已经超出自己的理解范围。
 featured: false
 source: 据巴菲特与芒格关于能力圈的多次论述整理
@@ -20,4 +21,3 @@ sourceUrl: https://www.berkshirehathaway.com/letters/1996.html
 2. 哪些变量最可能让判断失效？
 3. 如果价格下跌一半，我会依据什么重新评估？
 4. 我的结论来自事实，还是来自别人坚定的语气？
-

@@ -35,6 +35,7 @@ quotes:
   - text: 价格是你付出的，价值是你得到的。
     author: 沃伦·巴菲特
     theme: 投资纪律
+    sourceId: warren-buffett
   - text: 最好的持有期限可以很长，但前提是最初的判断仍然成立。
     author: 据巴菲特思想整理
     theme: 长期主义
@@ -47,4 +48,11 @@ quotes:
   - text: 复利需要时间，时间需要纪律，纪律需要一个足够清楚的长期目标。
     author: 每日自省
     theme: 长期主义
-
+  - text: 每天结束时，都努力让自己比早晨更聪明一点。
+    author: 查理·芒格（意译）
+    theme: 个人成长
+    sourceId: charlie-munger
+  - text: 获得智慧是一种责任，学习不应在离开学校时停止。
+    author: 据查理·芒格思想整理
+    theme: 个人成长
+    sourceId: charlie-munger

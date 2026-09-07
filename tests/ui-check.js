@@ -16,7 +16,7 @@ async function check(condition, message) {
     page.on("pageerror", error => errors.push(`${viewport.name}: ${error.message}`));
 
     await page.goto(`${baseUrl}/#/`, { waitUntil: "networkidle" });
-    await check(await page.locator(".entry-card").count() === 8, `${viewport.name}: 首页内容数量异常`);
+    await check(await page.locator(".entry-card").count() === 9, `${viewport.name}: 首页内容数量异常`);
     await check(await page.locator("#dailyText").innerText() !== "", `${viewport.name}: 每日自省未显示`);
     const firstDailyQuote = await page.locator("#dailyText").innerText();
     await page.locator("#nextQuote").click();
@@ -30,8 +30,14 @@ async function check(condition, message) {
     await check(await page.locator(".tag-list a.active").count() === 1, `${viewport.name}: 标签专题没有激活`);
     await check(await page.locator(".timeline-item").count() > 0, `${viewport.name}: 标签专题没有匹配内容`);
 
+    await page.goto(`${baseUrl}/#/library`, { waitUntil: "networkidle" });
+    await check(await page.locator(".source-card").count() === 5, `${viewport.name}: 人物与书籍数量异常`);
+    await page.locator(".source-card").first().click();
+    await page.locator(".source-profile-title").waitFor();
+    await check(await page.locator(".source-content .entry-card").count() > 0, `${viewport.name}: 人物详情没有关联文章`);
+
     await page.goto(`${baseUrl}/#/`, { waitUntil: "networkidle" });
-    await page.locator(".entry-main").first().click();
+    await page.locator('.entry-main[href="#/post/price-and-value"]').click();
     await page.locator(".article-body blockquote").waitFor();
     await check(await page.locator(".article-body blockquote").count() === 1, `${viewport.name}: 文章正文未渲染`);
 
@@ -45,8 +51,17 @@ async function check(condition, message) {
       await check((await page.locator("#postTags").inputValue()).includes("投资理财"), `${viewport.name}: 推荐标签没有写入`);
       await page.locator(".import-panel summary").click();
       await page.locator("#importText").fill("第一条旧笔记\n内容一\n\n第二条旧笔记\n内容二");
+      await page.locator("#splitMode").selectOption("paragraph");
       await page.locator("#detectImport").click();
       await check(await page.locator(".detected-item").count() === 2, `${viewport.name}: 批量识别结果异常`);
+      await check(await page.evaluate(() => Boolean(window.pdfjsLib)), `${viewport.name}: PDF 解析组件未加载`);
+      await page.locator("#importFile").setInputFiles({ name: "quotes.txt", mimeType: "text/plain", buffer: Buffer.from("长期投资需要耐心与纪律，也需要在市场喧闹时保持独立判断。\n每天持续学习，才能让今天的自己比昨天更有智慧。", "utf8") });
+      await check(await page.locator(".detected-item").count() >= 2, `${viewport.name}: 文件短句发现异常`);
+      if (viewport.name === "desktop" && process.env.PDF_FIXTURE) {
+        await page.locator("#importFile").setInputFiles(process.env.PDF_FIXTURE);
+        await page.locator("#importFileName").filter({ hasText: "发现" }).waitFor({ timeout: 60000 });
+        await check(await page.locator(".detected-item").count() > 0, `${viewport.name}: PDF 未发现候选短句`);
+      }
     } else {
       await check(await page.locator(".toastui-editor-defaultUI").count() === 0, `${viewport.name}: 公网页面不应加载写作台`);
     }

@@ -1,0 +1,32 @@
+sources:
+  - id: warren-buffett
+    type: person
+    name: 沃伦·巴菲特
+    subtitle: Berkshire Hathaway 董事长、价值投资者
+    intro: 关注企业内在价值、资本配置、能力圈与长期复利。他的年度股东信是核对投资观点的重要一手资料。
+    themes: [价值投资, 企业研究, 长期主义]
+  - id: charlie-munger
+    type: person
+    name: 查理·芒格
+    subtitle: 投资者、伯克希尔长期副董事长
+    intro: 强调多元思维模型、逆向思考、机会成本和避免重大错误。网络语录误传较多，整理时应区分逐字引文与思想转述。
+    themes: [决策方法, 逆向思考, 终身学习]
+  - id: poor-charlies-almanack
+    type: book
+    name: 穷查理宝典
+    subtitle: 查理·芒格的演讲、文章与思想汇编
+    intro: 围绕投资、心理误判、跨学科思维模型和人生判断。不同中文版本页码可能不同，书摘应记录所用版本和页码。
+    themes: [思维模型, 心理误判, 个人成长]
+  - id: berkshire-letters
+    type: book
+    name: 伯克希尔·哈撒韦股东信
+    subtitle: 沃伦·巴菲特历年致股东的信
+    intro: 涵盖企业价值、保险、资本配置、管理层和市场周期，是研究巴菲特投资方法的主要公开资料。
+    themes: [价值投资, 资本配置, 企业研究]
+  - id: intelligent-investor
+    type: book
+    name: 聪明的投资者
+    subtitle: 本杰明·格雷厄姆著
+    intro: 以安全边际、市场先生和投资者纪律为核心。引用时应注明版本，避免不同译本造成表述混淆。
+    themes: [安全边际, 投资纪律, 价值投资]
+

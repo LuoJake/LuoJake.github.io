@@ -4,6 +4,7 @@ type: quote
 author: 沃伦·巴菲特
 date: 2026-09-07
 tags: [投资理财, 价值投资, 巴菲特]
+relatedSources: [warren-buffett, berkshire-letters]
 summary: 价格每天都在变化，价值却需要独立判断。市场报价是起点，不是结论。
 featured: true
 source: Berkshire Hathaway 2008 Annual Letter
@@ -21,4 +22,3 @@ sourceUrl: https://www.berkshirehathaway.com/letters/2008ltr.pdf
 ## 给自己的提醒
 
 买入前，先写下我对价值的估算依据。如果唯一的理由只是“它已经跌了很多”，那还不算完成判断。
-

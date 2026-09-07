@@ -6,3 +6,4 @@ dist/
 .chrome-*/
 .edge-*/
 homepage-*.png
+.test-fixtures/

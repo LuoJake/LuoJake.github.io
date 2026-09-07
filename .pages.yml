@@ -66,6 +66,23 @@ content:
             - 巴菲特
             - 芒格
             - 长文
+            - 待整理
+      - name: relatedSources
+        label: 关联人物与书籍
+        type: select
+        options:
+          multiple: true
+          values:
+            - label: 沃伦·巴菲特
+              value: warren-buffett
+            - label: 查理·芒格
+              value: charlie-munger
+            - label: 穷查理宝典
+              value: poor-charlies-almanack
+            - label: 伯克希尔·哈撒韦股东信
+              value: berkshire-letters
+            - label: 聪明的投资者
+              value: intelligent-investor
       - name: summary
         label: 摘要
         type: text
@@ -113,6 +130,59 @@ content:
             required: true
             options:
               values: [个人成长, 财务自由, 投资纪律, 长期主义, 逆向思考]
+          - name: sourceId
+            label: 关联人物
+            type: select
+            options:
+              values:
+                - label: 沃伦·巴菲特
+                  value: warren-buffett
+                - label: 查理·芒格
+                  value: charlie-munger
+
+  - name: sources
+    label: 人物与书籍
+    type: file
+    path: content/sources.yml
+    fields:
+      - name: sources
+        label: 资料
+        type: object
+        list:
+          min: 1
+          collapsible:
+            collapsed: true
+            summary: "{name}"
+        fields:
+          - name: id
+            label: 唯一标识
+            type: string
+            required: true
+          - name: type
+            label: 类型
+            type: select
+            required: true
+            options:
+              values:
+                - label: 人物
+                  value: person
+                - label: 书籍或文集
+                  value: book
+          - name: name
+            label: 名称
+            type: string
+            required: true
+          - name: subtitle
+            label: 简介标题
+            type: string
+          - name: intro
+            label: 介绍
+            type: text
+            required: true
+          - name: themes
+            label: 主题
+            type: string
+            list: true
 
 settings:
   content:
@@ -123,4 +193,3 @@ settings:
       create: "content: 创建 {path}"
       update: "content: 更新 {path}"
       delete: "content: 删除 {path}"
-

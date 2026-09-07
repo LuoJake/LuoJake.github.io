@@ -4,6 +4,7 @@ type: quote
 author: 查理·芒格
 date: 2026-09-01
 tags: [投资理财, 决策方法, 芒格]
+relatedSources: [charlie-munger]
 summary: 判断一个机会时，真正的比较对象不是现金，而是当下能够找到的最佳替代选择。
 featured: false
 source: 据芒格关于机会成本的公开论述整理，非逐字引语
@@ -15,4 +16,3 @@ sourceUrl: https://buffett.cnbc.com/
 一个看上去“还不错”的投资，不一定值得行动。如果存在更简单、更确定、回报更好的选择，那么前者的真实成本就是放弃后者。
 
 这也解释了为什么耐心重要。现金并非没有价值，它保留了面对未来机会时的选择权。
-
